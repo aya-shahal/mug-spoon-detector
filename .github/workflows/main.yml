@@ -25,4 +25,4 @@ jobs:
           file: ./Dockerfile
           push: true
           # IMPORTANT: Replace 'your-dockerhub-username/your-repo-name' with your actual Docker Hub details
-          tags: shahhalaya/mug-spoon-detector:latest
+          tags: shahhalaya/my-ai-app:latest
