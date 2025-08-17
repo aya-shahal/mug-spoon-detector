@@ -1,0 +1,37 @@
+# ======================== #
+# Standard Python/Flask    #
+# ======================== #
+
+# Ignore sensitive data
+.env
+
+# Ignore dependency folders and build artifacts
+venv/
+__pycache__/
+dist/
+build/
+*.pyc
+
+# Ignore IDE files
+.vscode/
+.idea/
+
+# Ignore OS-specific files
+.DS_Store
+
+# ======================== #
+# YOLOv5 Specific          #
+# ======================== #
+
+# Ignore the entire YOLOv5 folder if you cloned it locally
+# This is a good practice as it will be cloned in the Docker build
+yolov5/
+
+# Ignore pre-trained models. These can be large.
+*.pt
+
+# Ignore the runs folder where YOLOv5 saves output and results
+runs/
+
+# Ignore any specific data folders you have
+data/
