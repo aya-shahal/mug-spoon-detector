@@ -1,37 +1,21 @@
-# Use Python 3.9 slim image
-FROM python:3.9-slim
+# Start with a base image that has Python and PyTorch
+FROM pytorch/pytorch:latest
 
-# Set working directory
+# Set a working directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    libglib2.0-0 \
-    libsm6 \
-    libxext6 \
-    libxrender-dev \
-    libgomp1 \
-    libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements first for better caching
+# Copy your application code and all necessary files
+COPY app.py .
+COPY best.pt .
+COPY data.yaml .
 COPY requirements.txt .
+COPY templates/ templates/
+RUN apt-get update && apt-get install -y libgl1-mesa-glx libglib2.0-0 && rm -rf /var/lib/apt/lists/*
+# Install dependencies
+RUN pip install -r requirements.txt
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the application
-COPY . .
-
-# Create templates directory if it doesn't exist
-RUN mkdir -p templates
-
-# Expose port
+# Expose the port
 EXPOSE 5000
 
-# Set environment variables
-ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
-
-# Run the application
+# Run the Flask app
 CMD ["python", "app.py"]
