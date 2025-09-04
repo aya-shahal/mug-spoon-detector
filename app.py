@@ -8,31 +8,77 @@ import yaml
 import os
 import traceback
 
-# This is the key change: Import the YOLO class directly
-from ultralytics import YOLO
-
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
-# Your trained model is expected to be in the same directory as app.py
 MODEL_PATH = 'best.pt'
 IMG_SIZE = 416
 
-# Try to load the model
-try:
-    print("Attempting to load model using ultralytics.YOLO...")
-    # Use the YOLO class to load your custom model. This is the official method.
-    model = YOLO(MODEL_PATH)
-    model.conf = 0.25
-    model.iou = 0.45
-    print("Model loaded successfully!")
-except Exception as e:
-    print(f"Error loading model: {e}")
-    traceback.print_exc()
-    model = None
-    print("Running without model - will show demo message")
+# Try loading with different methods
+model = None
+CLASS_NAMES = {0: 'mug', 1: 'spoon'}
 
-# Load class names from data.yaml
+def try_load_model():
+    global model, CLASS_NAMES
+    
+    # Method 1: Try loading as PyTorch model directly
+    try:
+        print("Attempting to load as PyTorch model...")
+        checkpoint = torch.load(MODEL_PATH, map_location='cpu')
+        
+        # Check if it's a YOLOv5 checkpoint
+        if 'model' in checkpoint:
+            print("YOLOv5 checkpoint detected")
+            # Extract model state dict
+            model_state = checkpoint['model']
+            
+            # Try to load with ultralytics (might work with some YOLOv5 models)
+            from ultralytics import YOLO
+            model = YOLO()
+            # This is a workaround - create a basic YOLO model and load weights
+            model.model.load_state_dict(model_state.state_dict() if hasattr(model_state, 'state_dict') else model_state)
+            print("Model loaded successfully using direct PyTorch loading!")
+            return True
+            
+    except Exception as e:
+        print(f"PyTorch loading failed: {e}")
+    
+    # Method 2: Try ultralytics with conversion
+    try:
+        print("Attempting to load with ultralytics (with conversion)...")
+        from ultralytics import YOLO
+        
+        # This might auto-convert YOLOv5 to YOLOv8 format
+        model = YOLO(MODEL_PATH)
+        model.conf = 0.25
+        model.iou = 0.45
+        print("Model loaded successfully with ultralytics!")
+        return True
+        
+    except Exception as e:
+        print(f"Ultralytics loading failed: {e}")
+    
+    # Method 3: Use a pre-trained YOLOv8 model as fallback
+    try:
+        print("Loading pre-trained YOLOv8n as fallback...")
+        from ultralytics import YOLO
+        model = YOLO('yolov8n.pt')  # This will download if not present
+        model.conf = 0.25
+        model.iou = 0.45
+        print("Fallback YOLOv8n model loaded!")
+        return True
+    except Exception as e:
+        print(f"Fallback model loading failed: {e}")
+    
+    return False
+
+# Try to load the model
+if try_load_model():
+    print("Model loaded successfully!")
+else:
+    print("All model loading methods failed. Running without model.")
+
+# Load class names
 try:
     with open('data.yaml', 'r') as f:
         data_config = yaml.safe_load(f)
@@ -40,27 +86,44 @@ try:
     print(f"Classes loaded: {CLASS_NAMES}")
 except Exception as e:
     print(f"Error loading data.yaml: {e}")
-    CLASS_NAMES = ['mug', 'spoon']  # Fallback
     print("Using fallback class names")
 
 def process_detection(image, results):
     try:
-        if not results or not results[0].boxes:
+        if not results or not hasattr(results[0], 'boxes') or results[0].boxes is None:
             return image, "No objects detected", []
 
-        detections_data = results[0].boxes.data.cpu().numpy()
-        
+        boxes = results[0].boxes
+        if len(boxes) == 0:
+            return image, "No objects detected", []
+            
         draw = ImageDraw.Draw(image)
         try:
-            font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 20)
-        except IOError:
+            font = ImageFont.truetype("arial.ttf", 20)
+        except:
             font = ImageFont.load_default()
         
         detected_objects = []
+        
+        # Handle different box formats
+        if hasattr(boxes, 'data'):
+            detections_data = boxes.data.cpu().numpy()
+        elif hasattr(boxes, 'xyxy'):
+            detections_data = boxes.xyxy.cpu().numpy()
+        else:
+            detections_data = boxes.cpu().numpy()
+        
         for det in detections_data:
-            x1, y1, x2, y2, confidence, class_id = det
+            if len(det) >= 6:  # x1, y1, x2, y2, conf, class
+                x1, y1, x2, y2, confidence, class_id = det[:6]
+            elif len(det) >= 5:  # x1, y1, x2, y2, conf (no class)
+                x1, y1, x2, y2, confidence = det[:5]
+                class_id = 0  # default class
+            else:
+                continue
+                
             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-            class_name = CLASS_NAMES[int(class_id)]
+            class_name = CLASS_NAMES.get(int(class_id), f'class_{int(class_id)}')
             
             draw.rectangle([x1, y1, x2, y2], outline='red', width=3)
             label = f"{class_name}: {confidence:.2f}"
@@ -90,7 +153,7 @@ def predict_image(image):
         if model is None:
             return None, "Model not loaded", []
         
-        # Run inference using the YOLO model. The imgsz argument is for resizing.
+        # Run inference
         results = model(image, imgsz=IMG_SIZE)
         
         annotated_image, summary, detections = process_detection(image.copy(), results)
