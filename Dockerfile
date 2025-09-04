@@ -6,7 +6,6 @@ WORKDIR /app
 
 # Copy your application code and all necessary files
 COPY app.py .
-COPY best.pt .
 COPY data.yaml .
 COPY requirements.txt .
 COPY templates/ templates/
