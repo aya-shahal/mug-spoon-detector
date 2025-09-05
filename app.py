@@ -16,30 +16,33 @@ IMG_SIZE = 416
 
 # Try loading with different methods
 model = None
-CLASS_NAMES = {0: 'mug', 1: 'spoon'}
+
+# Normalized mapping: support weird class IDs from training
+CLASS_NAMES = {
+    0: 'mug',
+    1: 'spoon',
+    41: 'mug',
+    44: 'spoon',
+    76: 'spoon'
+}
 
 def try_load_model():
-    global model, CLASS_NAMES
+    global model
     
     # Method 1: Try loading as PyTorch model directly
     try:
         print("Attempting to load as PyTorch model...")
         checkpoint = torch.load(MODEL_PATH, map_location='cpu')
         
-        # Check if it's a YOLOv5 checkpoint
         if 'model' in checkpoint:
             print("YOLOv5 checkpoint detected")
-            # Extract model state dict
             model_state = checkpoint['model']
             
-            # Try to load with ultralytics (might work with some YOLOv5 models)
             from ultralytics import YOLO
             model = YOLO()
-            # This is a workaround - create a basic YOLO model and load weights
             model.model.load_state_dict(model_state.state_dict() if hasattr(model_state, 'state_dict') else model_state)
             print("Model loaded successfully using direct PyTorch loading!")
             return True
-            
     except Exception as e:
         print(f"PyTorch loading failed: {e}")
     
@@ -47,14 +50,11 @@ def try_load_model():
     try:
         print("Attempting to load with ultralytics (with conversion)...")
         from ultralytics import YOLO
-        
-        # This might auto-convert YOLOv5 to YOLOv8 format
         model = YOLO(MODEL_PATH)
         model.conf = 0.25
         model.iou = 0.45
         print("Model loaded successfully with ultralytics!")
         return True
-        
     except Exception as e:
         print(f"Ultralytics loading failed: {e}")
     
@@ -62,7 +62,7 @@ def try_load_model():
     try:
         print("Loading pre-trained YOLOv8n as fallback...")
         from ultralytics import YOLO
-        model = YOLO('yolov8n.pt')  # This will download if not present
+        model = YOLO('yolov8n.pt')
         model.conf = 0.25
         model.iou = 0.45
         print("Fallback YOLOv8n model loaded!")
@@ -78,11 +78,13 @@ if try_load_model():
 else:
     print("All model loading methods failed. Running without model.")
 
-# Load class names
+# Load class names from yaml (optional)
 try:
     with open('data.yaml', 'r') as f:
         data_config = yaml.safe_load(f)
-        CLASS_NAMES = data_config['names']
+        # Merge yaml class names with fallback mapping
+        for k, v in data_config['names'].items():
+            CLASS_NAMES[int(k)] = v
     print(f"Classes loaded: {CLASS_NAMES}")
 except Exception as e:
     print(f"Error loading data.yaml: {e}")
@@ -116,14 +118,14 @@ def process_detection(image, results):
         for det in detections_data:
             if len(det) >= 6:  # x1, y1, x2, y2, conf, class
                 x1, y1, x2, y2, confidence, class_id = det[:6]
-            elif len(det) >= 5:  # x1, y1, x2, y2, conf (no class)
+            elif len(det) >= 5:  # no class info
                 x1, y1, x2, y2, confidence = det[:5]
-                class_id = 0  # default class
+                class_id = -1
             else:
                 continue
                 
             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-            class_name = CLASS_NAMES.get(int(class_id), f'class_{int(class_id)}')
+            class_name = CLASS_NAMES.get(int(class_id), 'unknown')
             
             draw.rectangle([x1, y1, x2, y2], outline='red', width=3)
             label = f"{class_name}: {confidence:.2f}"
@@ -137,6 +139,7 @@ def process_detection(image, results):
                 'bbox': [x1, y1, x2, y2]
             })
         
+        # Count objects
         object_counts = {}
         for obj in detected_objects:
             object_counts[obj['class']] = object_counts.get(obj['class'], 0) + 1
@@ -146,6 +149,7 @@ def process_detection(image, results):
         
         return image, summary_text, detected_objects
     except Exception as e:
+        traceback.print_exc()
         return image, f"Error processing detection: {str(e)}", []
 
 def predict_image(image):
@@ -153,11 +157,8 @@ def predict_image(image):
         if model is None:
             return None, "Model not loaded", []
         
-        # Run inference
         results = model(image, imgsz=IMG_SIZE)
-        
         annotated_image, summary, detections = process_detection(image.copy(), results)
-        
         return annotated_image, summary, detections
     except Exception as e:
         traceback.print_exc()
@@ -181,7 +182,6 @@ def predict():
             return jsonify({'error': 'No file uploaded'})
 
         image = Image.open(io.BytesIO(file.read())).convert('RGB')
-        
         annotated_image, summary, detections = predict_image(image)
         
         if annotated_image is None:
