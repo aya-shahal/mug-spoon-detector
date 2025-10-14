@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YOLOv5 Mug & Spoon Detector</title>
+    <title>Object Detection System</title>
     <style>
         * {
             margin: 0;
@@ -12,56 +12,168 @@
         }
         
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+            background: #ffffff;
             min-height: 100vh;
-            padding: 20px;
+            padding: 0;
         }
         
-        .container {
+        .navbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
             background: white;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 800px;
-            margin: 0 auto;
+            border-bottom: 1px solid #f0f0f0;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
         }
         
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 2rem;
-            font-size: 2.5rem;
+        .logo {
+            font-size: 1.3rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            color: #000;
         }
         
-        .subtitle {
-            text-align: center;
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+        
+        .nav-links a {
+            text-decoration: none;
             color: #666;
-            margin-bottom: 2rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+        
+        .nav-links a:hover {
+            color: #000;
+        }
+        
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #000;
+            transition: width 0.3s ease;
+        }
+        
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+        
+        .hero {
+            padding: 5rem 2rem;
+            text-align: center;
+            background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            letter-spacing: -1px;
+            color: #000;
+            line-height: 1.2;
+        }
+        
+        .hero p {
             font-size: 1.1rem;
+            color: #666;
+            max-width: 600px;
+            margin: 0 auto 2rem;
+            font-weight: 400;
+            line-height: 1.6;
+        }
+        
+        .main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 2rem;
+        }
+        
+        .upload-wrapper {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #f0f0f0;
+            padding: 2rem;
+            margin-bottom: 3rem;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-wrapper:hover {
+            border-color: #e0e0e0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+        
+        .section-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #999;
+            margin-bottom: 1.5rem;
         }
         
         .upload-section {
             display: flex;
             flex-direction: column;
             align-items: center;
-            margin-bottom: 2rem;
         }
         
         .upload-area {
-            border: 2px dashed #667eea;
-            border-radius: 10px;
-            padding: 2rem;
+            border: 2px dashed #d0d0d0;
+            border-radius: 8px;
+            padding: 3rem 2rem;
             text-align: center;
-            margin-bottom: 1rem;
-            transition: all 0.3s ease;
             width: 100%;
-            max-width: 400px;
+            max-width: 500px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+            cursor: pointer;
+            position: relative;
         }
         
         .upload-area:hover {
-            border-color: #764ba2;
-            background-color: #f8f9ff;
+            border-color: #000;
+            background: #f0f0f0;
+        }
+        
+        .upload-area.active {
+            border-color: #000;
+            background: #fff;
+        }
+        
+        .upload-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.6;
+        }
+        
+        .upload-area p {
+            color: #333;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .upload-area span {
+            display: block;
+            color: #999;
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
         }
         
         .file-input {
@@ -69,119 +181,66 @@
         }
         
         .upload-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #000;
             color: white;
-            padding: 12px 24px;
+            padding: 9px 18px;
             border: none;
-            border-radius: 25px;
+            border-radius: 6px;
             cursor: pointer;
-            font-size: 16px;
-            transition: transform 0.3s ease;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 1rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
         .upload-btn:hover {
+            background: #333;
             transform: translateY(-2px);
         }
         
         .predict-btn {
-            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            background: #000;
             color: white;
-            padding: 15px 30px;
+            padding: 11px 28px;
             border: none;
-            border-radius: 25px;
-            font-size: 18px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 1rem;
-            transition: transform 0.3s ease;
+            margin-top: 1.5rem;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         
-        .predict-btn:hover {
+        .predict-btn:hover:not(:disabled) {
+            background: #333;
             transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
         }
         
         .predict-btn:disabled {
-            background: #ccc;
+            background: #e0e0e0;
             cursor: not-allowed;
             transform: none;
-        }
-        
-        .images-container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            margin-top: 2rem;
-        }
-        
-        .image-section {
-            text-align: center;
-        }
-        
-        .image-section h3 {
-            margin-bottom: 1rem;
-            color: #333;
-        }
-        
-        .preview-img, .result-img {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        .result-section {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            border-radius: 10px;
-            display: none;
-        }
-        
-        .result-section.success {
-            background: #d4edda;
-            border: 1px solid #c3e6cb;
-            color: #155724;
-        }
-        
-        .result-section.error {
-            background: #f8d7da;
-            border: 1px solid #f5c6cb;
-            color: #721c24;
-        }
-        
-        .detection-summary {
-            font-size: 1.2rem;
-            font-weight: bold;
-            margin-bottom: 1rem;
-            text-align: center;
-        }
-        
-        .detections-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        
-        .detection-item {
-            background: rgba(255,255,255,0.5);
-            padding: 1rem;
-            border-radius: 8px;
-            text-align: center;
         }
         
         .loading {
             display: none;
             text-align: center;
-            margin-top: 1rem;
+            margin-top: 2rem;
         }
         
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border: 2px solid #f0f0f0;
+            border-top: 2px solid #000;
             border-radius: 50%;
             width: 40px;
             height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1rem;
         }
         
         @keyframes spin {
@@ -189,57 +248,235 @@
             100% { transform: rotate(360deg); }
         }
         
+        .loading p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .images-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 3rem;
+            display: none;
+        }
+        
+        .image-section {
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #f0f0f0;
+            padding: 1.5rem;
+            overflow: hidden;
+        }
+        
+        .image-section h3 {
+            margin-bottom: 1rem;
+            color: #000;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: #999;
+        }
+        
+        .preview-img, .result-img {
+            width: 100%;
+            max-height: 400px;
+            object-fit: cover;
+            border-radius: 8px;
+            background: #f5f5f5;
+        }
+        
+        .result-section {
+            margin-top: 3rem;
+            padding: 2rem;
+            border-radius: 12px;
+            display: none;
+            border-left: 3px solid #000;
+            background: #fafafa;
+        }
+        
+        .result-section.error {
+            background: #fff5f5;
+            border-left-color: #d32f2f;
+        }
+        
+        .detection-summary {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: #000;
+            letter-spacing: 0.3px;
+        }
+        
+        .result-section.error .detection-summary {
+            color: #d32f2f;
+        }
+        
+        .detections-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .detection-item {
+            background: white;
+            padding: 1.2rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .detection-item:hover {
+            border-color: #000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .detection-item strong {
+            font-size: 1rem;
+            display: block;
+            margin-bottom: 0.7rem;
+            color: #000;
+        }
+        
+        .detection-item span {
+            color: #999;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1.5rem;
+            margin-top: 2rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border: 1px solid #f0f0f0;
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #000;
+            margin-bottom: 0.3rem;
+        }
+        
+        .stat-label {
+            font-size: 0.8rem;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 2rem;
+            border-top: 1px solid #f0f0f0;
+            margin-top: 3rem;
+            color: #999;
+            font-size: 0.85rem;
+        }
+        
         @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .hero p {
+                font-size: 1rem;
+            }
+            
             .images-container {
                 grid-template-columns: 1fr;
             }
             
-            h1 {
-                font-size: 2rem;
+            .nav-links {
+                gap: 1rem;
+                font-size: 0.8rem;
+            }
+            
+            .upload-area {
+                padding: 2rem 1.5rem;
+            }
+            
+            .detections-list {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🔍 YOLOv5 Mug & Spoon Detector</h1>
-        <p class="subtitle">Upload an image to detect mugs and spoons with bounding boxes</p>
-        
-        <div class="upload-section">
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="logo">DetectAI</div>
+
+    </nav>
+    
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Object Detection</h1>
+        <p>Advanced YOLOv5-based image analysis. Detect, analyze, and visualize objects with precision.</p>
+    </section>
+    
+    <!-- Main Content -->
+    <main class="main">
+        <div class="upload-wrapper">
+            <div class="section-label">Upload Image</div>
+            
             <form id="uploadForm">
-                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-                    <p>📸 Click here to upload an image</p>
-                    <button type="button" class="upload-btn">Choose Image</button>
-                    <input type="file" id="fileInput" class="file-input" accept="image/*" required>
+                <div class="upload-section">
+                    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                        <div class="upload-icon">📸</div>
+                        <p>Drag or click to upload</p>
+                        <span>PNG, JPG, GIF (Max 10MB)</span>
+                        <input type="file" id="fileInput" class="file-input" accept="image/*" required>
+                    </div>
+                    
+                    <button type="submit" id="predictBtn" class="predict-btn" disabled>
+                        Analyze Image
+                    </button>
                 </div>
-                
-                <button type="submit" id="predictBtn" class="predict-btn" disabled>
-                    🚀 Detect Objects
-                </button>
             </form>
+            
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Processing your image...</p>
+            </div>
         </div>
         
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>Analyzing image with YOLOv5...</p>
-        </div>
-        
-        <div class="images-container" id="imagesContainer" style="display: none;">
+        <!-- Image Comparison -->
+        <div class="images-container" id="imagesContainer">
             <div class="image-section">
-                <h3>Original Image</h3>
+                <h3>Input</h3>
                 <img id="preview" class="preview-img">
             </div>
             <div class="image-section">
-                <h3>Detection Results</h3>
+                <h3>Analysis</h3>
                 <img id="resultImg" class="result-img">
             </div>
         </div>
         
+        <!-- Results Section -->
         <div id="resultSection" class="result-section">
             <div class="detection-summary" id="summary"></div>
             <div class="detections-list" id="detectionsList"></div>
         </div>
-    </div>
+    </main>
+    
+    <footer class="footer">
+        <p>&copy; 2025 DetectAI. Powered by YOLOv5 Object Detection.</p>
+    </footer>
 
     <script>
         const fileInput = document.getElementById('fileInput');
@@ -252,9 +489,32 @@
         const imagesContainer = document.getElementById('imagesContainer');
         const summary = document.getElementById('summary');
         const detectionsList = document.getElementById('detectionsList');
+        const uploadArea = document.querySelector('.upload-area');
 
-        fileInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('active');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('active');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('active');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFileSelect();
+            }
+        });
+
+        fileInput.addEventListener('change', handleFileSelect);
+
+        function handleFileSelect() {
+            const file = fileInput.files[0];
             if (file) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -264,7 +524,7 @@
                 };
                 reader.readAsDataURL(file);
             }
-        });
+        }
 
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -296,22 +556,18 @@
                 if (data.error) {
                     showResult(data.error, 'error');
                 } else {
-                    // Show annotated image
                     resultImg.src = data.annotated_image;
-                    
-                    // Show summary
                     summary.textContent = data.summary;
                     
-                    // Show individual detections
                     detectionsList.innerHTML = '';
                     if (data.detections && data.detections.length > 0) {
-                        data.detections.forEach((detection, index) => {
+                        data.detections.forEach((detection) => {
                             const item = document.createElement('div');
                             item.className = 'detection-item';
                             const emoji = detection.class === 'mug' ? '☕' : '🥄';
                             item.innerHTML = `
-                                <strong>${emoji} ${detection.class}</strong><br>
-                                Confidence: ${detection.confidence}
+                                <strong>${emoji} ${detection.class}</strong>
+                                <span>${detection.confidence}</span>
                             `;
                             detectionsList.appendChild(item);
                         });
@@ -322,7 +578,7 @@
             } catch (error) {
                 loading.style.display = 'none';
                 predictBtn.disabled = false;
-                showResult('Error connecting to server.', 'error');
+                showResult('Error connecting to server. Please try again.', 'error');
             }
         });
 
